@@ -3,12 +3,12 @@ from sklearn_numba_dpex.kmeans.kernels import (
 )
 import dpctl.tensor as dpt
 import numpy as np
-
+import timeit
 from sklearn_numba_dpex.common._utils import _get_global_mem_cache_size
 
 n_iter = 100
 
-n_samples = 500000
+n_samples = 5000000
 n_features = 14
 n_clusters = 127
 return_assignments = True
@@ -52,6 +52,8 @@ strict_convergence_status = dpt.empty(1, dtype=np.uint32, device=device)
     device=device,
 )
 
+print(n_centroids_private_copies)
+
 new_centroids_t_private_copies = dpt.empty(
     (n_centroids_private_copies, n_features, n_clusters),
     dtype=compute_dtype,
@@ -78,8 +80,10 @@ fused_lloyd_fixed_window_single_step_kernel(
 )
 print("Compiling...OK")
 
+print(f"n_samples={n_samples} n_features={n_features} n_clusters={n_clusters}")
 
 print("Running...")
+t0 = timeit.default_timer()
 for i in range(n_iter):
     fused_lloyd_fixed_window_single_step_kernel(
         X_t,
@@ -93,4 +97,5 @@ for i in range(n_iter):
         new_centroids_t_private_copies,
         cluster_sizes_private_copies,
     )
-print("Running...OK")
+t1 = timeit.default_timer()
+print(f"Running...OK. Time: {t1-t0}")
